@@ -7,8 +7,6 @@ def scatter_pair(psi, n, m, *args, **kwargs):
     """Scatter the particles `n` and `m` given the state `psi`, and return the new state."""
     N = len(psi.shape)
     index = psi_index(N, n, m)
-
-    # psi[index[0]], psi[index[1]], psi[index[2]], psi[index[3]] = scatter(psi[index[0]], psi[index[1]], psi[index[2]], psi[index[3]])
     psi[index] = scatter(*psi[index], *args, **kwargs)
 
     return psi
@@ -16,12 +14,6 @@ def scatter_pair(psi, n, m, *args, **kwargs):
 
 def psi_index(N, n, m):
     """Return indices for the 4 configurations of particles n and m."""
-    # index = np.full((4, N), slice(None))
-    # index[:, n] = [0, 0, 1, 1]
-    # index[:, m] = [0, 1, 0, 1]
-    #
-    # index = [tuple(idx) for idx in index]
-
     index = N * [slice(None)]
     index[n] = [0, 0, 1, 1]
     index[m] = [0, 1, 0, 1]
@@ -53,13 +45,22 @@ def psi_flavor_eigenstate(flavors):
     return psi
 
 
-psi = psi_flavor_eigenstate([0, 1, 1])
+psi = psi_flavor_eigenstate([0, 1, 1, 1, 1, 1])
 print(psi)
 
-scatter_pair(psi, 0, 1, theta=pi/2, omega0_t=0.05)
+scatter_pair(psi, 0, 1, theta=pi/2, omega0_t=0.01)
 print(psi)
 
-scatter_pair(psi, 0, 2, theta=pi/2, omega0_t=0.05)
+scatter_pair(psi, 0, 2, theta=pi/2, omega0_t=0.01)
+print(psi)
+
+scatter_pair(psi, 0, 3, theta=pi/2, omega0_t=0.01)
+print(psi)
+
+scatter_pair(psi, 0, 4, theta=pi/2, omega0_t=0.01)
+print(psi)
+
+scatter_pair(psi, 0, 5, theta=pi/2, omega0_t=0.01)
 print(psi)
 
 print(np.sum(np.abs(psi[1, ...])**2))
