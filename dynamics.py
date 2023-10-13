@@ -5,20 +5,8 @@ from scipy.constants import pi
 
 def scatter_pair(psi, n, m, *args, **kwargs):
     """Scatter the particles `n` and `m` given the state `psi`, and return the new state."""
-    N = len(psi.shape)
+    N = psi.ndim
     index = psi_index(N, n, m)
-
-    # This is an attempt to fix the use of the old `psi_index`, which sometimes puts its flattened axis in the middle
-    # of all the axes. I wasn't able to predict where the flattened axis ends up, so this didn't work.
-    # # Move the flattened axis to the front.
-    # print(psi.shape)
-    # print(n, m)
-    # print(psi[index].shape)
-    # psi_view = np.moveaxis(psi[index], min(n, m), 0)
-    #
-    # print(psi_view.shape)
-    #
-    # psi_view[:] = scatter(*psi_view, *args, **kwargs)
 
     psi = psi.copy()
     psi[index[0]], psi[index[1]], psi[index[2]], psi[index[3]] = scatter(psi[index[0]], psi[index[1]], psi[index[2]], psi[index[3]], *args, **kwargs)
@@ -33,13 +21,6 @@ def psi_index(N, n, m):
     index[:, m] = [0, 1, 0, 1]
 
     index = [tuple(i) for i in index]
-
-    # The old version of the index.
-    # index = N * [slice(None)]
-    # index[n] = [0, 0, 1, 1]
-    # index[m] = [0, 1, 0, 1]
-    #
-    # return tuple(index)
 
     return index
 

@@ -1,30 +1,21 @@
 import numpy as np
 
-from dynamics import scatter_pair, flavor_eigenstate
+from dynamics import flavor_eigenstate
+from analysis import random_scatter, entropy, flavor_expval, average_entropy, average_flavor
 
 
-def random_scatter(psi, n, *args, **kwargs):
-    """Scatter random pairs of particles `n` times and return the states along the way."""
-    N = len(psi.shape)
-    particle1 = np.random.randint(0, N, n)                      # Any random particle.
-    particle2 = (particle1 + np.random.randint(1, N, n)) % N    # A random particle that's different from particle 1.
+def analyze(initial_flavors, n_scatters, *args, **kwargs):
+    psi0 = flavor_eigenstate(initial_flavors)
+    psis = random_scatter(psi0, n_scatters, *args, **kwargs)
 
-    psis = [psi]
-    for i, j in zip(particle1, particle2):
-        psis.append(scatter_pair(psis[-1], i, j, *args, **kwargs))
+    avg_entropy = np.array([average_entropy(psi) for psi in psis])
+    avg_flavor = np.array([average_flavor(psi) for psi in psis])
 
-    return psis
+    entropy0 = np.array([entropy(psi, 0) for psi in psis])
+    flavor0 = np.array([flavor_expval(psi, 0) for psi in psis])
+
+    return avg_entropy, avg_flavor, entropy0, flavor0
 
 
-psi = flavor_eigenstate([1, 0, 0])
-
-psis = random_scatter(psi, 1000, omega0_t=0.1)
-
-for psi in psis:
-    print(np.sum(np.abs(psi[1, ...])**2))
-
-psi = psis[-1]
-
-print("---")
-print(np.sum(np.abs(psi[1, ...])**2))
-print(np.sum(np.abs(psi[0, ...])**2))
+avg_entropy, avg_flavor, entropy0, flavor0 = analyze([1, 0, 0], n_scatters=100, omega0_t=0.1)
+print(avg_entropy)
