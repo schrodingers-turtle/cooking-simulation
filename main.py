@@ -1,66 +1,30 @@
 import numpy as np
-from numpy import cos
-from scipy.constants import pi
+
+from dynamics import scatter_pair, flavor_eigenstate
 
 
-def scatter_pair(psi, n, m, *args, **kwargs):
-    """Scatter the particles `n` and `m` given the state `psi`, and return the new state."""
+def random_scatter(psi, n, *args, **kwargs):
+    """Scatter random pairs of particles `n` times and return the states along the way."""
     N = len(psi.shape)
-    index = psi_index(N, n, m)
-    psi[index] = scatter(*psi[index], *args, **kwargs)
+    particle1 = np.random.randint(0, N, n)                      # Any random particle.
+    particle2 = (particle1 + np.random.randint(1, N, n)) % N    # A random particle that's different from particle 1.
 
-    return psi
+    psis = [psi]
+    for i, j in zip(particle1, particle2):
+        psis.append(scatter_pair(psis[-1], i, j, *args, **kwargs))
 
-
-def psi_index(N, n, m):
-    """Return indices for the 4 configurations of particles n and m."""
-    index = N * [slice(None)]
-    index[n] = [0, 0, 1, 1]
-    index[m] = [0, 1, 0, 1]
-
-    return tuple(index)
+    return psis
 
 
-def scatter(ee, eu, ue, uu, theta=pi/2, omega0_t=1):
-    """Scatter two neutrinos given their combined state components, and return the new components."""
-    phase = np.exp(-2j * omega0_t * (1 - cos(theta)))
-    ee = ee * phase
-    uu = uu * phase
+psi = flavor_eigenstate([1, 0, 0])
 
-    c = (eu + ue) / 2
-    d = (eu - ue) / 2
-    eu = c*phase + d
-    ue = c*phase - d
+psis = random_scatter(psi, 1000, omega0_t=0.1)
 
-    return ee, eu, ue, uu
+for psi in psis:
+    print(np.sum(np.abs(psi[1, ...])**2))
 
+psi = psis[-1]
 
-def psi_flavor_eigenstate(flavors):
-    """Make a flavor eigenstate with the given flavors for each neutrino."""
-    N = len(flavors)
-
-    psi = np.zeros(N * [2], dtype=complex)
-    psi[tuple(flavors)] = 1
-
-    return psi
-
-
-psi = psi_flavor_eigenstate([0, 1, 1, 1, 1, 1])
-print(psi)
-
-scatter_pair(psi, 0, 1, theta=pi/2, omega0_t=0.01)
-print(psi)
-
-scatter_pair(psi, 0, 2, theta=pi/2, omega0_t=0.01)
-print(psi)
-
-scatter_pair(psi, 0, 3, theta=pi/2, omega0_t=0.01)
-print(psi)
-
-scatter_pair(psi, 0, 4, theta=pi/2, omega0_t=0.01)
-print(psi)
-
-scatter_pair(psi, 0, 5, theta=pi/2, omega0_t=0.01)
-print(psi)
-
+print("---")
 print(np.sum(np.abs(psi[1, ...])**2))
+print(np.sum(np.abs(psi[0, ...])**2))
