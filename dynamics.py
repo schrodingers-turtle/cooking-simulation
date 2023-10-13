@@ -1,6 +1,5 @@
 import numpy as np
-from numpy import cos
-from scipy.constants import pi
+from numpy import cos, pi
 
 
 def scatter_pair(psi, n, m, *args, **kwargs):
