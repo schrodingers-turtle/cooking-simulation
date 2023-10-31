@@ -1,22 +1,6 @@
 import numpy as np
 from scipy.linalg import logm
 
-from dynamics import scatter_pair
-
-
-def random_scatter(psi0, n, *args, **kwargs):
-    """Scatter random pairs of particles `n` times and return the states along the way."""
-    N = psi0.ndim
-    particle1 = np.random.randint(0, N, n)                      # Any random particle.
-    particle2 = (particle1 + np.random.randint(1, N, n)) % N    # A random particle that's different from particle 1.
-
-    psi = psi0
-    yield psi
-
-    for i, j in zip(particle1, particle2):
-        psi = scatter_pair(psi, i, j, *args, **kwargs)
-        yield psi
-
 
 def density_matrix(psi, n):
     """The density matrix for the particle `n` from the multiparticle state `psi`."""

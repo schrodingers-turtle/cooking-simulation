@@ -2,6 +2,25 @@ import numpy as np
 from numpy import cos, pi
 
 
+def random_scatter(psi0, n, random_angles=True, *args, **kwargs):
+    """Scatter random pairs of particles `n` times and return the states along the way."""
+    N = psi0.ndim
+    particle1 = np.random.randint(0, N, n)                      # Any random particle.
+    particle2 = (particle1 + np.random.randint(1, N, n)) % N    # A random particle that's different from particle 1.
+
+    if random_angles:
+        theta = pi * np.random.rand(n)
+    else:
+        theta = pi/2 * np.ones(n)
+
+    psi = psi0
+    yield psi
+
+    for i, j, theta_ in zip(particle1, particle2, theta):
+        psi = scatter_pair(psi, i, j, *args, theta=theta_, **kwargs)
+        yield psi
+
+
 def scatter_pair(psi, n, m, *args, **kwargs):
     """Scatter the particles `n` and `m` given the state `psi`, and return the new state."""
     N = psi.ndim

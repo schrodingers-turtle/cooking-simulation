@@ -4,8 +4,8 @@ import time
 
 import numpy as np
 
-from dynamics import flavor_eigenstate
-from analysis import random_scatter, entropy, flavor_expval
+from dynamics import flavor_eigenstate, random_scatter
+from analysis import entropy, flavor_expval
 
 
 def take_data(initial_flavors, n_scatters, verbose=True, *args, **kwargs):
@@ -29,10 +29,16 @@ def take_data(initial_flavors, n_scatters, verbose=True, *args, **kwargs):
 
 
 start = time.perf_counter()
-data = [take_data(M*[0] + M*[1], n_scatters=1500, omega0_t=0.1) for M in range(1, 12)]
+
+# Equal flavor distribution, N = 2 * (1 thru 11).
+# data = [take_data(M*[0] + M*[1], n_scatters=1500, omega0_t=0.1) for M in range(1, 12)]
+
+# 9 initial electron neutrinos, 7 initial muon neutrinos.
+data = [take_data(9*[0] + 7*[1], n_scatters=3000, omega0_t=0.1)]
+
 end = time.perf_counter()
 
-with open('data.pickle', 'wb') as file:
+with open('data3.pickle', 'wb') as file:
     pickle.dump(data, file)
 
 print(data)

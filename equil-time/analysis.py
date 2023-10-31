@@ -4,6 +4,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 from numpy.polynomial.polynomial import Polynomial
 
+datapath = '../data/data2.pickle'
+
 
 def t_cross(avg_e_flavors, N):
     """Return the time at which the average flavor of the initial electron
@@ -11,6 +13,7 @@ def t_cross(avg_e_flavors, N):
     scales correctly with the number of neutrinos `N`. This crossing time is
     expected to be proportional to the equilibration time."""
     n_collisions = zero_crossings(avg_e_flavors - 1/2)[0][0]  # The first crossing.
+    print(n_collisions)
     return n_collisions / N**2
 
 
@@ -30,7 +33,7 @@ def avg_e_flavors(flavors):
 
 
 def plot():
-    with open('../data.pickle', 'rb') as file:
+    with open(datapath, 'rb') as file:
         full_data = pickle.load(file)
 
     M = np.arange(len(full_data)) + 1
@@ -59,7 +62,7 @@ def plot():
     ylim = np.array(ax.get_ylim())
     fit = Polynomial.fit(*data[:, -5:], 1)
     line_endpoints = np.array([data[0, -5], xlim[1]])
-    ax.plot(line_endpoints, fit(line_endpoints), ls=':', c='black', label="linear fit ($t_{cross} \propto N^{-0.5}$)")
+    ax.plot(line_endpoints, fit(line_endpoints), ls=':', c='black', label="linear fit ($t_{cross} \propto N^{-0.8}$)")
     ax.set_xlim(xlim)
     ax.set_ylim(ylim)
 
