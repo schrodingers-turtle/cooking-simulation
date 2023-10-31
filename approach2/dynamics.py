@@ -1,17 +1,17 @@
 """Scatter a particular neutrino off of many other "background" neutrinos.
 
 Created 17 October 2023.
-
-TODO: Fix scattering angle weights for 3D!
 """
 import numpy as np
-from numpy import pi, cos
+from numpy import pi, cos, arccos
 from scipy.linalg import logm
 
 
-def random_scatter(rho0, rho_background, n, *args, **kwargs):
+def scatter_backgrounds(rho0, rho_background, n, *args, **kwargs):
     """Scatter a neutrino of interest off of background neutrinos `n` times."""
-    theta = pi * np.random.rand(n)
+    # The `theta` angle of a spherically uniform random 3D direction.
+    cos_theta = 2*np.random.rand(n) - 1
+    theta = arccos(cos_theta)
 
     rho = np.array(rho0)
     yield rho
