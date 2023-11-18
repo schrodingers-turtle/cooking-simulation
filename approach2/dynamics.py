@@ -11,7 +11,7 @@ from scipy.linalg import logm
 
 def random_scatter(initial_states, n, *args, **kwargs):
     """Scatter random pairs of particles `n` times and return all the states
-     along the way."""
+    along the way."""
     N = len(initial_states)
     particle1, particle2 = pick_random_pairs(N, n)
     relative_angles = random_theta(n)
