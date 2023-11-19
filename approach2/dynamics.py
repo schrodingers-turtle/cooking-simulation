@@ -5,23 +5,46 @@ Note: the functions expect states to have complex datatypes.
 Created 17 October 2023.
 """
 import numpy as np
-from numpy import pi, cos, arccos
+from numpy import pi, sin, cos, arccos, identity
 from scipy.linalg import logm
 
 
-def random_scatter(initial_states, n, *args, **kwargs):
+def random_scatter(initial_states, n, l, omega=(0, 0), theta=0.1, Theta='random'):
     """Scatter random pairs of particles `n` times and return all the states
-    along the way."""
+    along the way. Scatter the particles with random angles and with vacuum
+    oscillations.
+
+    :param Theta: Relative angle of (the momentum of) interacting neutrinos.
+    :param theta: Neutrino mixing angle.
+    :param omega: Vacuum oscillation frequency (in units of the coherent flavor
+     conversion oscillation frequency mu).
+    """
     N = len(initial_states)
     particle1, particle2 = pick_random_pairs(N, n)
-    relative_angles = random_theta(n)
+
+    if Theta == 'random':
+        Theta = random_theta(n)
+    else:
+        Theta = Theta * np.ones(n)
+
+    M = N // 2
+    omega_per_M = np.array(omega) / M
 
     states = np.array(initial_states)
     yield states
 
-    for i, (p1, p2, theta) in enumerate(zip(particle1, particle2, relative_angles)):
+    for i, (p1, p2, Theta_) in enumerate(zip(particle1, particle2, Theta)):
         states = states.copy()
-        states[[p1, p2]] = independent_scatter(*states[[p1, p2]], theta=theta, *args, **kwargs)
+        states[[p1, p2]] = independent_scatter(*states[[p1, p2]], l=l, Theta=Theta_)
+
+        # Where to split the states to apply two different vacuum oscillations.
+        split_index = N // 2
+
+        for (omega_per_M_, states_) in zip(omega_per_M, [states[:split_index], states[split_index:]]):
+            if omega_per_M_:
+                # Apply vacuum oscillations.
+                states_[:] = propagate(states_, omega_per_M_ * l, theta)
+
         yield states
 
 
@@ -36,15 +59,13 @@ def independent_scatter(rho1, rho2, *args, **kwargs):
 
 def scatter_backgrounds(rho0, rho_background, n, *args, **kwargs):
     """Scatter a neutrino of interest off of background neutrinos `n` times."""
-    # The `theta` angle of a spherically uniform random 3D direction.
-    cos_theta = 2*np.random.rand(n) - 1
-    theta = arccos(cos_theta)
+    Theta = random_theta(n)
 
     rho = np.array(rho0)
     yield rho
 
-    for theta_ in theta:
-        rho = scatter_background(rho, rho_background, *args, theta=theta_, **kwargs)
+    for Theta_ in Theta:
+        rho = scatter_background(rho, rho_background, *args, Theta=Theta_, **kwargs)
         yield rho
 
 
@@ -60,9 +81,9 @@ def scatter_background(rho, rho_background, *args, **kwargs):
     return rho
 
 
-def scatter(rho, theta=pi/2, omega0_t=0.1):
+def scatter(rho, Theta=pi/2, l=0.1):
     """Evolve the flavor density matrix of two neutrinos that scatter."""
-    phase = np.exp(-2j * omega0_t * (1 - cos(theta)))
+    phase = np.exp(-2j * l * (1 - cos(Theta)))
 
     # Time evolution matrix.
     N = 2
@@ -78,6 +99,22 @@ def scatter(rho, theta=pi/2, omega0_t=0.1):
     # blows up (after ~50 scatters).
     trace = np.trace(np.trace(rho, axis1=0, axis2=2))
     rho /= trace
+
+    return rho
+
+
+def propagate(rho, omega_t, theta):
+    """Propagate a neutrino in the vacuum, i.e., apply vacuum oscillations to
+    `rho`.
+
+    TODO: Check bugs from trace normalization.
+     (Since the simulation matches the analytic analysis, this probably isn't a
+     huge issue, but it could be nice to check it explicitly anyway."""
+    delta = omega_t / 2
+    sin_ = sin(2*theta)
+    cos_ = cos(2*theta)
+    U = cos(delta) * identity(2) + 1j * sin(delta) * np.array([[cos_, sin_], [sin_, -cos_]])
+    rho = U @ rho @ U.T.conjugate()
 
     return rho
 
