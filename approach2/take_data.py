@@ -15,13 +15,16 @@ sample_period = 1000
 
 M = 50
 l = 0.001
-n = 5000000 * 2
+n = 5000000 * 4
 omega = np.array([0.1, 0.2])
 theta = 0.1
 # Theta = 'random'
-Theta = pi / 2
+Theta = 'randomMartin'
+# Theta = pi / 2
 
-filename = f'M-{M}-l-{l}-n-{n}-P-{sample_period}.pickle'
+version = 3
+
+filename = f'M-{M}-l-{l}-n-{n}-P-{sample_period}-v-{version}.pickle'
 
 Pauli = np.array([
     [[0, 1], [1, 0]],

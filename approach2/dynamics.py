@@ -24,6 +24,17 @@ def random_scatter(initial_states, n, l, omega=(0, 0), theta=0.1, Theta='random'
 
     if Theta == 'random':
         Theta = random_theta(n)
+    elif Theta == 'randomMartin':
+        absolute_directions = random_direction(N)
+        cos_Theta = (absolute_directions[particle1] * absolute_directions[particle2]).sum(axis=1)
+        Theta = arccos(cos_Theta)
+
+        # For debugging:
+        print(particle1)
+        print(particle2)
+        print(absolute_directions)
+        print(cos_Theta)
+        print(Theta)
     else:
         Theta = Theta * np.ones(n)
 
@@ -172,3 +183,11 @@ def random_theta(shape):
     theta = arccos(cos_theta)
 
     return theta
+
+
+def random_direction(shape):
+    """Pick random 3D directions as unit vectors."""
+    theta = random_theta(shape)
+    phi = 2*pi * np.random.rand(shape)
+    n_hat = np.moveaxis(np.stack([sin(theta)*cos(phi), sin(theta)*sin(phi), cos(theta)]), 0, -1)
+    return n_hat
