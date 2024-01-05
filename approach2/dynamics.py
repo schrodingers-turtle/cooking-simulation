@@ -9,11 +9,13 @@ from numpy import pi, sin, cos, arccos, identity
 from scipy.linalg import logm
 
 
-def random_scatter(initial_states, n, l, omega=(0, 0), theta=0.1, Theta='random'):
+def random_scatter(initial_states, split_index, n, l, omega=(0, 0), theta=0.1, Theta='random'):
     """Scatter random pairs of particles `n` times and return all the states
     along the way. Scatter the particles with random angles and with vacuum
     oscillations.
 
+    :param split_index: Where to split the states to apply two different vacuum
+     oscillations.
     :param Theta: Relative angle of (the momentum of) interacting neutrinos.
     :param theta: Neutrino mixing angle.
     :param omega: Vacuum oscillation frequency (in units of the coherent flavor
@@ -38,9 +40,6 @@ def random_scatter(initial_states, n, l, omega=(0, 0), theta=0.1, Theta='random'
     else:
         Theta = Theta * np.ones(n)
 
-    M = N // 2
-    omega_per_M = np.array(omega) / M
-
     states = np.array(initial_states)
     yield states
 
@@ -48,13 +47,10 @@ def random_scatter(initial_states, n, l, omega=(0, 0), theta=0.1, Theta='random'
         states = states.copy()
         states[[p1, p2]] = independent_scatter(*states[[p1, p2]], l=l, Theta=Theta_)
 
-        # Where to split the states to apply two different vacuum oscillations.
-        split_index = N // 2
-
-        for (omega_per_M_, states_) in zip(omega_per_M, [states[:split_index], states[split_index:]]):
-            if omega_per_M_:
+        for (omega_, states_) in zip(omega, (states[:split_index], states[split_index:])):
+            if omega_:
                 # Apply vacuum oscillations.
-                states_[:] = propagate(states_, omega_per_M_ * l, theta)
+                states_[:] = propagate(states_, omega_ * 2/N * l, theta)
 
         yield states
 
@@ -120,7 +116,7 @@ def propagate(rho, omega_t, theta):
 
     TODO: Check bugs from trace normalization.
      (Since the simulation matches the analytic analysis, this probably isn't a
-     huge issue, but it could be nice to check it explicitly anyway."""
+     huge issue, but it could be nice to check it explicitly anyway.)"""
     delta = omega_t / 2
     sin_ = sin(2*theta)
     cos_ = cos(2*theta)
