@@ -9,7 +9,7 @@ from numpy import pi, sin, cos, arccos, identity
 from scipy.linalg import logm
 
 
-def random_scatter(initial_states, split_index, n, l, omega=(0, 0), theta=0.1, Theta='random', reproducible=False):
+def random_scatter(initial_states, split_index, n, gamma, alpha=(0, 0), theta=0.1, Theta='random', reproducible=False):
     """Scatter random pairs of particles `n` times and return all the states
     along the way. Scatter the particles with random angles and with vacuum
     oscillations.
@@ -19,8 +19,10 @@ def random_scatter(initial_states, split_index, n, l, omega=(0, 0), theta=0.1, T
     :param reproducible: Reset the random seed if `True`.
     :param Theta: Relative angle of (the momentum of) interacting neutrinos.
     :param theta: Neutrino mixing angle.
-    :param omega: Vacuum oscillation frequency (in units of the coherent flavor
-     conversion oscillation frequency mu).
+    :param gamma: Coherent flavor oscillation strength: mu * Delta z.
+    :param alpha: Vacuum oscillation strength:
+     omega * (free, vacuum oscillation time per collision, for a single
+     neutrino).
     """
     if reproducible:
         np.random.seed(42)
@@ -49,12 +51,12 @@ def random_scatter(initial_states, split_index, n, l, omega=(0, 0), theta=0.1, T
 
     for i, (p1, p2, Theta_) in enumerate(zip(particle1, particle2, Theta)):
         states = states.copy()
-        states[[p1, p2]] = independent_scatter(*states[[p1, p2]], l=l, Theta=Theta_)
+        states[[p1, p2]] = independent_scatter(*states[[p1, p2]], gamma=gamma, Theta=Theta_)
 
-        for (omega_, states_) in zip(omega, (states[:split_index], states[split_index:])):
-            if omega_:
+        for (alpha_, states_) in zip(alpha, (states[:split_index], states[split_index:])):
+            if alpha_:
                 # Apply vacuum oscillations.
-                states_[:] = propagate(states_, omega_ * 2/N * l, theta)
+                states_[:] = propagate(states_, alpha_ * 2 / N, theta)
 
         yield states
 
@@ -80,9 +82,9 @@ def independent_scatter(rho1, rho2, *args, **kwargs):
     return rho1, rho2
 
 
-def scatter(rho, Theta=pi/2, l=0.1):
+def scatter(rho, Theta=pi/2, gamma=0.1):
     """Evolve the flavor density matrix of two neutrinos that scatter."""
-    phase = np.exp(-2j * l * (1 - cos(Theta)))
+    phase = np.exp(-2j * gamma * (1 - cos(Theta)))
 
     # The time evolution matrix.
     U = np.zeros((4, 4), dtype=complex)
