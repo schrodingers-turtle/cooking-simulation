@@ -7,9 +7,15 @@ Created 17 October 2023.
 import numpy as np
 from numpy import pi, sin, cos, exp, arccos, identity
 
+pauli = np.array([
+    [[0, 1], [1, 0]],
+    [[0, -1j], [1j, 0]],
+    [[1, 0], [0, -1]]
+])
 
-def random_scatter(initial_states, split_index, n, gamma, alpha1=(0, 0),
-                   alpha2=(0, 0), theta=0.1, Theta='random', reproducible=False):
+
+def random_scatter(initial_states, split_index, n, gamma, alpha1=(0, 0), alpha2=(0, 0), Theta='random',
+                   reproducible=False):
     """Scatter random pairs of particles `n` times and return all the states
     along the way. Scatter the particles with random angles and with vacuum
     oscillations.
@@ -18,7 +24,6 @@ def random_scatter(initial_states, split_index, n, gamma, alpha1=(0, 0),
      oscillations.
     :param reproducible: Reset the random seed if `True`.
     :param Theta: Relative angle of (the momentum of) interacting neutrinos.
-    :param theta: Neutrino mixing angle.
     :param gamma: Coherent flavor oscillation strength: mu * Delta z.
     :param alpha1: Simultaneous vacuum oscillation strength: omega * Delta z.
     :param alpha2: Free vacuum oscillation strength:
@@ -65,7 +70,7 @@ def random_scatter(initial_states, split_index, n, gamma, alpha1=(0, 0),
         for (alpha2_, states_) in zip(alpha2, (states[:split_index], states[split_index:])):
             if alpha2_:
                 # Apply vacuum oscillations.
-                states_[:] = propagate(states_, alpha2_ * 2 / N, theta)
+                states_[:] = propagate(states_, alpha2_ * 2 / N)
 
         yield states
 
@@ -117,6 +122,8 @@ def scatter(rho, Theta=pi/2, gamma=0.1, alpha1a=0.001, alpha1b=0.002):
     U[0, 0] = exp(-1j * (-alpha1a - alpha1b + gammabar) / 2)
     U[3, 3] = exp(-1j * (alpha1a + alpha1b + gammabar) / 2)
 
+    # TODO: Maybe try `numpy.linalg.multi_dot` for speed
+    #  (anywhere that it can be applied, like whenever two `@`'s are used).
     rho = U @ rho @ U.T.conjugate()
 
     # This step is required in order to avoid floating point error that quickly
@@ -126,17 +133,18 @@ def scatter(rho, Theta=pi/2, gamma=0.1, alpha1a=0.001, alpha1b=0.002):
     return rho
 
 
-def propagate(rho, omega_t, theta):
+def propagate(rho, omega_t):
     """Propagate a neutrino in the vacuum, i.e., apply vacuum oscillations to
-    `rho`.
+    `rho`, in the mass basis.
 
     TODO: Check bugs from trace normalization.
      (Since the simulation matches the analytic analysis, this probably isn't a
-     huge issue, but it could be nice to check it explicitly anyway.)"""
-    delta = omega_t / 2
-    sin_ = sin(2*theta)
-    cos_ = cos(2*theta)
-    U = cos(delta) * identity(2) + 1j * sin(delta) * np.array([[cos_, sin_], [sin_, -cos_]])
+     huge issue, but it could be nice to check it explicitly anyway.
+     It may not be an issue since `scatter` always renormalizes the trace every
+     step, anyway.)
+    """
+    phase = exp(-1j * -omega_t/2)
+    U = np.diag([phase, phase.conjugate()])
     rho = U @ rho @ U.T.conjugate()
 
     return rho
@@ -180,3 +188,13 @@ def random_direction(shape):
     phi = 2*pi * np.random.rand(shape)
     n_hat = np.moveaxis(np.stack([sin(theta)*cos(phi), sin(theta)*sin(phi), cos(theta)]), 0, -1)
     return n_hat
+
+
+def rho_from_bloch(bloch):
+    """Convert Bloch vectors to 2x2 density matrices."""
+    return (identity(2) + np.tensordot(bloch, pauli, axes=1)) / 2
+
+
+def bloch_from_rho(rho):
+    """Convert 2x2 density matrices to Bloch vectors."""
+    return np.trace(np.dot(rho, pauli), axis1=-3, axis2=-1)
