@@ -5,11 +5,11 @@ Note: the functions expect states to have complex datatypes.
 Created 17 October 2023.
 """
 import numpy as np
-from numpy import pi, sin, cos, arccos, identity
-from scipy.linalg import logm
+from numpy import pi, sin, cos, exp, arccos, identity
 
 
-def random_scatter(initial_states, split_index, n, gamma, alpha=(0, 0), theta=0.1, Theta='random', reproducible=False):
+def random_scatter(initial_states, split_index, n, gamma, alpha1=(0, 0),
+                   alpha2=(0, 0), theta=0.1, Theta='random', reproducible=False):
     """Scatter random pairs of particles `n` times and return all the states
     along the way. Scatter the particles with random angles and with vacuum
     oscillations.
@@ -20,7 +20,8 @@ def random_scatter(initial_states, split_index, n, gamma, alpha=(0, 0), theta=0.
     :param Theta: Relative angle of (the momentum of) interacting neutrinos.
     :param theta: Neutrino mixing angle.
     :param gamma: Coherent flavor oscillation strength: mu * Delta z.
-    :param alpha: Vacuum oscillation strength:
+    :param alpha1: Simultaneous vacuum oscillation strength: omega * Delta z.
+    :param alpha2: Free vacuum oscillation strength:
      omega * (free, vacuum oscillation time per collision, for a single
      neutrino).
     """
@@ -28,18 +29,22 @@ def random_scatter(initial_states, split_index, n, gamma, alpha=(0, 0), theta=0.
         np.random.seed(42)
 
     N = len(initial_states)
-    particle1, particle2 = pick_random_pairs(N, n)
+    particleA, particleB = pick_random_pairs(N, n)
+
+    alpha1_array = np.ones(N)
+    alpha1_array[:split_index] = alpha1[0]
+    alpha1_array[split_index:] = alpha1[1]
 
     if Theta == 'random':
         Theta = random_theta(n)
     elif Theta == 'randomMartin':
         absolute_directions = random_direction(N)
-        cos_Theta = (absolute_directions[particle1] * absolute_directions[particle2]).sum(axis=1)
+        cos_Theta = (absolute_directions[particleA] * absolute_directions[particleB]).sum(axis=1)
         Theta = arccos(cos_Theta)
 
         # For debugging:
-        print(particle1)
-        print(particle2)
+        print(particleA)
+        print(particleB)
         print(absolute_directions)
         print(cos_Theta)
         print(Theta)
@@ -49,14 +54,18 @@ def random_scatter(initial_states, split_index, n, gamma, alpha=(0, 0), theta=0.
     states = np.array(initial_states)
     yield states
 
-    for i, (p1, p2, Theta_) in enumerate(zip(particle1, particle2, Theta)):
-        states = states.copy()
-        states[[p1, p2]] = independent_scatter(*states[[p1, p2]], gamma=gamma, Theta=Theta_)
+    for i, (pA, pB, Theta_) in enumerate(zip(particleA, particleB, Theta)):
+        alpha1a, alpha1b = alpha1_array[[pA, pB]]
 
-        for (alpha_, states_) in zip(alpha, (states[:split_index], states[split_index:])):
-            if alpha_:
+        states = states.copy()
+        states[[pA, pB]] = independent_scatter(
+            *states[[pA, pB]], gamma=gamma, alpha1a=alpha1a, alpha1b=alpha1b, Theta=Theta_
+        )
+
+        for (alpha2_, states_) in zip(alpha2, (states[:split_index], states[split_index:])):
+            if alpha2_:
                 # Apply vacuum oscillations.
-                states_[:] = propagate(states_, alpha_ * 2 / N, theta)
+                states_[:] = propagate(states_, alpha2_ * 2 / N, theta)
 
         yield states
 
@@ -82,15 +91,31 @@ def independent_scatter(rho1, rho2, *args, **kwargs):
     return rho1, rho2
 
 
-def scatter(rho, Theta=pi/2, gamma=0.1):
+def scatter(rho, Theta=pi/2, gamma=0.1, alpha1a=0.001, alpha1b=0.002):
     """Evolve the flavor density matrix of two neutrinos that scatter."""
-    phase = np.exp(-2j * gamma * (1 - cos(Theta)))
+    gammabar = gamma * (1 - cos(Theta))
+    DeltaAlpha = alpha1b - alpha1a
+    K = (DeltaAlpha ** 2 + 4 * gammabar ** 2) ** (1 / 2)
+
+    # The eigenvector matrix.
+    S = np.array([
+        [(DeltaAlpha - K) / (2 * gammabar), (DeltaAlpha + K) / (2 * gammabar)],
+        [1, 1]
+    ])
+    Sinv = np.array([
+        [-gammabar / K, (1 + DeltaAlpha / K) / 2],
+        [gammabar / K, (1 - DeltaAlpha / K) / 2]
+    ])
+
+    # The diagonalized part of e^-iHt.
+    expJ = np.diag([exp(-1j * (-gammabar - K) / 2), exp(-1j * (-gammabar + K) / 2)])
 
     # The time evolution matrix.
     U = np.zeros((4, 4), dtype=complex)
-    U[0, 0] = U[3, 3] = phase
-    U[1, 1] = U[2, 2] = (phase + 1) / 2
-    U[1, 2] = U[2, 1] = (phase - 1) / 2
+
+    U[1:3, 1:3] = S @ expJ @ Sinv
+    U[0, 0] = exp(-1j * (-alpha1a - alpha1b + gammabar) / 2)
+    U[3, 3] = exp(-1j * (alpha1a + alpha1b + gammabar) / 2)
 
     rho = U @ rho @ U.T.conjugate()
 

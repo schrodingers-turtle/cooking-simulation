@@ -17,7 +17,8 @@ Ne = 60
 Nx = 40
 gamma = 0.01
 n = 500000
-alpha = gamma * np.array([0.1, 0.2])
+alpha1 = 0 * gamma * np.array([0.1, 0.2])
+alpha2 = gamma * np.array([0.1, 0.2])
 theta = 0.1
 # Theta = 'random'
 Theta = 'randomMartin'
@@ -41,7 +42,8 @@ data = []
 
 with open(filename, 'wb') as file:
     for i, states in enumerate(random_scatter(
-            initial_states, split_index, n, gamma=gamma, alpha=alpha, Theta=Theta, theta=theta, reproducible=reproducible
+            initial_states, split_index, n, gamma=gamma, alpha1=alpha1,
+            alpha2=alpha2, theta=theta, Theta=Theta, reproducible=reproducible
     )):
         if i % sample_period == 0:
             if accumulate:

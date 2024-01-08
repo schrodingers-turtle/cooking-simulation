@@ -1,4 +1,7 @@
-"""Run the simulation and save data."""
+"""Run the simulation and save data.
+
+Note: Outdated!
+"""
 import pickle
 
 import numpy as np
@@ -15,10 +18,16 @@ def main():
 
 
 def take_data(M, n):
-    """Run the simulation and save data to a file."""
+    """Run the simulation and save data to a file.
+
+    Note: This is outdated and might not run correctly!
+     Currently, this is not set up to use the new signature of `random_scatter`. Martin's random angles are not
+     specified in the call to `random_scatter`.
+    """
     filename = f"M-{M}-n-{n}.pickle"
 
-    states = random_scatter(initial_states(M), n)
+    split_index = M
+    states = random_scatter(initial_states(M), split_index, n)
 
     with open(filename, 'ab') as file:
         for states_ in states:
