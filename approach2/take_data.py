@@ -23,7 +23,7 @@ theta = 0.1
 Theta = 'randomMartin'
 # Theta = pi / 2
 
-version = 2
+version = 1
 reproducible = True
 
 filename = f'Ne-{Ne}-Nx-{Nx}-l-{l}-n-{n}-P-{sample_period}-v-{version}.pickle'
