@@ -13,17 +13,18 @@ accumulate = False
 
 sample_period = 100
 
-Ne = 50
-Nx = 50
+Ne = 60
+Nx = 40
 l = 0.01
-n = 500000 * 8
+n = 500000
 omega = np.array([0.1, 0.2])
-theta = 0.3
+theta = 0.1
 # Theta = 'random'
 Theta = 'randomMartin'
 # Theta = pi / 2
 
 version = 2
+reproducible = True
 
 filename = f'Ne-{Ne}-Nx-{Nx}-l-{l}-n-{n}-P-{sample_period}-v-{version}.pickle'
 
@@ -39,7 +40,9 @@ split_index = Ne
 data = []
 
 with open(filename, 'wb') as file:
-    for i, states in enumerate(random_scatter(initial_states, split_index, n, l=l, omega=omega, Theta=Theta, theta=theta)):
+    for i, states in enumerate(random_scatter(
+            initial_states, split_index, n, l=l, omega=omega, Theta=Theta, theta=theta, reproducible=reproducible
+    )):
         if i % sample_period == 0:
             if accumulate:
                 Bloch = states[..., np.newaxis, :, :] @ Pauli

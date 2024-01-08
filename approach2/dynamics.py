@@ -9,18 +9,22 @@ from numpy import pi, sin, cos, arccos, identity
 from scipy.linalg import logm
 
 
-def random_scatter(initial_states, split_index, n, l, omega=(0, 0), theta=0.1, Theta='random'):
+def random_scatter(initial_states, split_index, n, l, omega=(0, 0), theta=0.1, Theta='random', reproducible=False):
     """Scatter random pairs of particles `n` times and return all the states
     along the way. Scatter the particles with random angles and with vacuum
     oscillations.
 
     :param split_index: Where to split the states to apply two different vacuum
      oscillations.
+    :param reproducible: Reset the random seed if `True`.
     :param Theta: Relative angle of (the momentum of) interacting neutrinos.
     :param theta: Neutrino mixing angle.
     :param omega: Vacuum oscillation frequency (in units of the coherent flavor
      conversion oscillation frequency mu).
     """
+    if reproducible:
+        np.random.seed(42)
+
     N = len(initial_states)
     particle1, particle2 = pick_random_pairs(N, n)
 
@@ -55,15 +59,6 @@ def random_scatter(initial_states, split_index, n, l, omega=(0, 0), theta=0.1, T
         yield states
 
 
-def independent_scatter(rho1, rho2, *args, **kwargs):
-    """Scatter two independent neutrinos, then return each of their new
-    independent density matrices."""
-    rho_full = combine_rho(rho1, rho2)
-    rho_full = scatter(rho_full, *args, **kwargs)
-    rho1, rho2 = split_rho(rho_full)
-    return rho1, rho2
-
-
 def scatter_backgrounds(rho0, rho_background, n, *args, **kwargs):
     """Scatter a neutrino of interest off of background neutrinos `n` times."""
     Theta = random_theta(n)
@@ -72,20 +67,17 @@ def scatter_backgrounds(rho0, rho_background, n, *args, **kwargs):
     yield rho
 
     for Theta_ in Theta:
-        rho = scatter_background(rho, rho_background, *args, Theta=Theta_, **kwargs)
+        rho, _ = independent_scatter(rho, rho_background, *args, Theta=Theta_, **kwargs)
         yield rho
 
 
-def scatter_background(rho, rho_background, *args, **kwargs):
-    """Scatter a neutrino of interest with (2x2) density matrix `rho` off of a
-    background neutrino with *independent* (2x2) density matrix
-    `rho_background`, and return the new density matrix for the neutrino of
-    interest."""
-    rho_full = combine_rho(rho, rho_background)
+def independent_scatter(rho1, rho2, *args, **kwargs):
+    """Scatter two independent neutrinos, then return each of their new
+    independent density matrices."""
+    rho_full = combine_rho(rho1, rho2)
     rho_full = scatter(rho_full, *args, **kwargs)
-    rho = trace_out(rho_full)
-
-    return rho
+    rho1, rho2 = split_rho(rho_full)
+    return rho1, rho2
 
 
 def scatter(rho, Theta=pi/2, l=0.1):
